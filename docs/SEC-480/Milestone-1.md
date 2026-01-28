@@ -24,11 +24,47 @@ In our instance all other configuration options were left blank. After all previ
 
 If no issues arose the boot media should be properly formatted. Insert the created boot media in the appropriate port on the host machine.
 
-## Installing VMware ESXI
+## Installing VMware ESXi
 
-Once the boot media is inserted either power on or power cycle the host system. If there were no issues you should be brought to the installer.
+Once the boot media is inserted either power on or power cycle the host system. If there were no issues you should be brought to the installer. **When propmted for a password do not forget it if you do you will need to restart.**
 
-# Images at the lab go in this section
+In our case the first thing that we set up was the network this is done by hitting f2 and navigatging with the arrow keys to the network managegment menu. In this menu we configured the  proper network adapter at the the top of the page. VLANS were not configured at this time.
+
+![](assets/20260128_101413_image.png)
+
+Ipv4 was configured with our given Ip addresses a /24 subnet and the room default gateway, as seen above. Ipv6 was disabled as it is not required. DNS was configured as in the image below. As per the network diagram
+
+![](assets/20260128_102302_image.png)
+
+The DNS servers used are the two cyber.local servers, because of this we can not access them for configuration. DNS configuration is also where we change the host name of the server in my case it is server 4, as that was what was assigned to me, your's will most likely be different.
+
+## Accessing and configuring ESXi host
+
+After a management ip is set and you are able to connect to it direct a web browser to the ip address. Use the login that you were propmpted to create when setting up the server, usually the username is root. After login the homepage will resemble the image below.
+
+![](assets/20260128_133346_image.png)
+
+## Storage
+
+When opening the storage tab it will look similar to the image below. Your server will have one data store, the drive that you placed the operating system on adding a new one is very easy.
+
+![](assets/20260128_152636_image.png)
+
+Click on the create new data store in the top right of the largest window. The window below will pop up, in our case we want to create a new VMFS datastore. Follow the steps presented in the window with the formatting and specifications required for your system.
+
+![](assets/20260128_152944_image.png)
+
+
+
+### .ISOs
+
+In most cases you will need to upload various .iso files to create your vms. For simplicity and ease of access we create a folder named ISOs to store all future .ISO files in. To do this click on the create directory button in the top right of the menu bar, type in the name of the folder then click create. To upload an .ISO click the upload button in the top left of the menu bar, then when the file browser opens upload all files that you would like to add.
+
+![](assets/20260128_153726_image.png)
+
+
+## Networking
+
 
 ### Useful links
 
