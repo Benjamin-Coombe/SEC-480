@@ -30,10 +30,6 @@ Once the boot media is inserted either power on or power cycle the host system. 
 
 # Images at the lab go in this section
 
-# Submission video
-
-[20260128_001112_20260128-0508-42.8046950.mp4](assets/20260128_001112_20260128-0508-42.8046950.mp4)
-
 ### Useful links
 
 * [BROADCOM-Installing ESXi on a supported USB flash drive or SD flash card](https://knowledge.broadcom.com/external/article?legacyId=2004784)
