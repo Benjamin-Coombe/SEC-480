@@ -7,7 +7,7 @@ Milestone 1 is initial set-up of our server, and our firewall and managment vm. 
 1. A USB drive,preferably over 8 gigabytes in size
    1. This will be **wiped clean**, so transfer any data you would like to keep.
 2. An already working computer that has a USB port and network connectivity with admin permissions
-3. An ESXI iso
+3. An ESXI .iso file
 4. A server/computer that you want to run ESXI on
 
 ## Boot media
