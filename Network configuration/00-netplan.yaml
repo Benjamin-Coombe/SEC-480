@@ -1,0 +1,13 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    ens34:
+      addresses:
+        - 10.0.17.100/24
+      routes:
+        - to: default
+          via: 10.0.17.2
+      nameservers:
+        search: [benjamin.local]
+        addresses: [10.0.17.4]
