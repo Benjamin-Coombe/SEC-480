@@ -1,6 +1,6 @@
 # Milestone 1
 
-Milestone 1 is initial set-up of our server, and our firewall and managment vm. I will be adding most of the images later as most of them are not on my local machine, so this may look a little sparse until then.
+Milestone 1 is initial set-up of our server, and our firewall and management vm. I will be adding most of the images later as most of them are not on my local machine, so this may look a little sparse until then.
 
 ## Prerequisites
 
@@ -14,7 +14,7 @@ Milestone 1 is initial set-up of our server, and our firewall and managment vm. 
 
 First, download a program that can format bootable media. In our case we used a utility named [RUFUS](https://rufus.ie/en/). Rufus can be aquired  either from the web or the microsoft store.  Rufus is a program that helps create and format bootable USB drives. *This is where you need admin privlages as rufus needs them to run.*
 
-When opened rufus presents the window below. The Device input is for the drive that is being formated into a boot drive, **make sure this is not a drive you care about, it will be wiped clean.** In our case boot selection does not change as we had an ESXI .iso file provided, how to aquire one can be found [here](https://knowledge.broadcom.com/external/article/372545/download-esxi-patch-and-the-isos-for-lat.html).
+When opened rufus presents the window below. The Device input is for the drive that is being formatted into a boot drive, **make sure this is not a drive you care about, it will be wiped clean.** In our case boot selection does not change as we had an ESXI .iso file provided, how to acquire one can be found [here](https://knowledge.broadcom.com/external/article/372545/download-esxi-patch-and-the-isos-for-lat.html).
 
 The select drop down opens the file browser, an issue that was found and addressed was that the ISO was not showing in the file browser opened by Rufus. To remedy this open the file browser in a different window and navigate to the folder where the ISO is located, then click and drag the .iso file onto the Rufus window.
 
@@ -28,7 +28,7 @@ If no issues arose the boot media should be properly formatted. Insert the creat
 
 Once the boot media is inserted either power on or power cycle the host system. If there were no issues you should be brought to the installer. **When propmted for a password do not forget it if you do you will need to restart.**
 
-In our case the first thing that we set up was the network this is done by hitting f2 and navigatging with the arrow keys to the network managegment menu. In this menu we configured the  proper network adapter at the the top of the page. VLANS were not configured at this time.
+In our case the first thing that we set up was the network this is done by hitting f2 and navigating with the arrow keys to the network management menu. In this menu we configured the  proper network adapter at the the top of the page. VLANS were not configured at this time.
 
 ![](assets/20260128_101413_image.png)
 
@@ -40,7 +40,7 @@ The DNS servers used are the two cyber.local servers, because of this we can not
 
 ## Accessing and configuring ESXi host
 
-After a management ip is set and you are able to connect to it direct a web browser to the ip address. Use the login that you were propmpted to create when setting up the server, usually the username is root. After login the homepage will resemble the image below.
+After a management ip is set and you are able to connect to it direct a web browser to the ip address. Use the login that you were prompted to create when setting up the server, usually the username is root. After login the homepage will resemble the image below.
 
 ![](assets/20260128_133346_image.png)
 

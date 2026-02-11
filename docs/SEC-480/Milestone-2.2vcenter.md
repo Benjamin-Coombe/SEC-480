@@ -17,7 +17,7 @@ On MGMT1 - Mount your VCSA ISO make sure that your CDROM is connected. Once moun
 
 Run through installer (this may take some time, 2 stages…)
 
-* Thin Disk!!, select the new datastore you created. don’t lose your VCSA root pass OR default SSO admin password, these are not recoverable. Lucily you can use the same password for both logins. Create your default vcenter domain & admin.
+* Thin Disk!!, select the new datastore you created. don’t lose your VCSA root pass OR default SSO admin password, these are not recoverable. Luckily you can use the same password for both logins. Create your default vcenter domain & admin.
 
 
 Most of this milestone is following what the vcsa installer tells you to do with the information that you already have, so all in all this was not very technical so i do not know what to put down here.

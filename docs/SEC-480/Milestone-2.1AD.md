@@ -44,7 +44,7 @@ Since dc1 is our domain controller it already has an 'a record' it needs a ptr r
 
 #### Testing
 
-To test if our records are actually working properly we can test on two seperate systems, dc1 and mgmt. While in remoted into the dc1 run the commands `nslookup vcenter.benjamin.local` and `nslookup 10.0.17.3`. you can also run the commands on your mgmt system after you reconfigure the netplan file to point your search domains towards dc1.
+To test if our records are actually working properly we can test on two separate systems, dc1 and mgmt. While in remoted into the dc1 run the commands `nslookup vcenter.benjamin.local` and `nslookup 10.0.17.3`. you can also run the commands on your mgmt system after you reconfigure the netplan file to point your search domains towards dc1.
 
 dc1 nslookup through xubuntu ssh
 
