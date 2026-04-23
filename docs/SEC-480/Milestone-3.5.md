@@ -15,8 +15,8 @@ Login to your vsphere client *(this is 10.0.17.3 not with the 5480 port)* under 
 
 ### Permissions
 
-** If you try to login at this point you may notice that it does not work yet, and gives you an error along the lines of "you do not have access to sign in" **
+** If you try to login at this point you may notice that it does not work yet, and gives you an error along the lines of "you do not have permission to access this server." **
 
-To fix the above issue go into the global permissions menu at the top of the screen, click add, click on the domain value and change that to your created domain. Next type in Domain Admins, keep the role as administrator, do not forget to click propogate to children. This should resolve the issue of not being able to sign in under domain users.
+To fix the above issue go into the global permissions menu at the top of the screen, click add, click on the domain value and change that to your created domain. Next type in Domain Admins, keep the role as administrator, **do not forget to click propogate to children**. This should resolve the issue of not being able to sign in under domain users.
 
 ![](assets/20260210_220831_image.png)
