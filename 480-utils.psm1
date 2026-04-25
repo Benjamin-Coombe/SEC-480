@@ -334,56 +334,62 @@ function New-Network {
     PSCustomObject with VMName, AdapterName, MacAddress, IPAddress.
 #>
 function Get-IP {
-     param(
-         [string]$VMName,
-         [int]   $AdapterIndex = 0
-     )
+    param(
+        [string]$VMName,
+        [int]   $AdapterIndex = 0
+    )
 
-     if (-not $VMName) { $VMName = Read-Host "VM name" }
+    if (-not $VMName) { $VMName = Read-Host "VM name" }
 
-     $vm = Get-VM -Name $VMName -ErrorAction SilentlyContinue
-     if (-not $vm) {
-         Write-Host "[ERROR] VM '$VMName' not found." -ForegroundColor Red
-         return $null
-     }
+    $vm = Get-VM -Name $VMName -ErrorAction SilentlyContinue
+    if (-not $vm) {
+        Write-Host "[ERROR] VM '$VMName' not found." -ForegroundColor Red
+        return $null
+    }
 
-     $adapters = Get-NetworkAdapter -VM $vm
-     if (-not $adapters -or $adapters.Count -eq 0) {
-         Write-Host "[WARN] No network adapters on '$VMName'." -ForegroundColor Yellow
-         return $null
-     }
+    $adapters = Get-NetworkAdapter -VM $vm
+    if (-not $adapters -or $adapters.Count -eq 0) {
+        Write-Host "[WARN] No network adapters found on '$VMName'." -ForegroundColor Yellow
+        return $null
+    }
 
-     if ($AdapterIndex -ge $adapters.Count) {
-         Write-Host "[WARN] Adapter index out of range. Using 0." -ForegroundColor Yellow
-         $AdapterIndex = 0
-     }
+    if ($AdapterIndex -ge $adapters.Count) {
+        Write-Host "[WARN] Adapter index $AdapterIndex out of range. VM has $($adapters.Count) adapter(s). Using index 0." -ForegroundColor Yellow
+        $AdapterIndex = 0
+    }
 
-     $adapter = $adapters[$AdapterIndex]
-     $mac     = $adapter.MacAddress
+    $adapter = $adapters[$AdapterIndex]
+    $mac     = $adapter.MacAddress
 
      # Filter guest IPs to IPv4 only (exclude IPv6 addresses)
      $allIPs = $vm.Guest.IPAddress
      $ipv4   = $allIPs | Where-Object {
          $_ -match '^(\d{1,3}\.){3}\d{1,3}$'
      }
-     $ipv4Address = if ($ipv4) { $ipv4[0] } else { "N/A (no IPv4 or Tools offline)" }
+        $ipv4Address = if ($ipv4) { $ipv4[0] } else { "N/A (no IPv4 or Tools offline)" }
 
-     $result = [PSCustomObject]@{
-         VMName       = $VMName
-         AdapterName  = $adapter.Name
-         MacAddress   = $mac
-         IPv4Address  = $ipv4Address
-     }
+    # Pull IP from guest info
+    $ipList = $vm.Guest.IPAddress
+    $ip     = if ($ipList -and $ipList.Count -gt $AdapterIndex) { $ipList[$AdapterIndex] } `
+              elseif ($ipList -and $ipList.Count -gt 0)         { $ipList[0] }             `
+              else                                               { "N/A (VM may be off or VMware Tools not running)" }
 
-     Write-Host ""
-     Write-Host "  VM           : $($result.VMName)"      -ForegroundColor Cyan
-     Write-Host "  Adapter      : $($result.AdapterName)" -ForegroundColor Cyan
-     Write-Host "  MAC Address  : $($result.MacAddress)"  -ForegroundColor Cyan
-     Write-Host "  IPv4 Address : $($result.IPv4Address)" -ForegroundColor Cyan
-     Write-Host ""
+    $result = [PSCustomObject]@{
+        VMName      = $VMName
+        AdapterName = $adapter.Name
+        MacAddress  = $mac
+        IPv4Address   = $ip
+    }
 
-     return $result
- }
+    Write-Host ""
+    Write-Host "  VM          : $($result.VMName)"      -ForegroundColor Cyan
+    Write-Host "  Adapter     : $($result.AdapterName)" -ForegroundColor Cyan
+    Write-Host "  MAC Address : $($result.MacAddress)"  -ForegroundColor Cyan
+    Write-Host "  IP Address  : $($result.IPAddress)"   -ForegroundColor Cyan
+    Write-Host ""
+
+    return $result
+}
 
 
 # ============================================================
