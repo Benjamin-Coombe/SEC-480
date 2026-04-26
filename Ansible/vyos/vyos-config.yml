@@ -18,7 +18,7 @@
         dest: /config/config.boot
     
     - name: Reboot the system
-      shell: nohup bash -c "sleep 2 && reboot -y" &
+      shell: nohup bash -c "sleep 2 && reboot -" &
       async: 0
       poll: 0
       ignore_errors: true

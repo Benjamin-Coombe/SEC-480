@@ -361,13 +361,6 @@ function Get-IP {
     $adapter = $adapters[$AdapterIndex]
     $mac     = $adapter.MacAddress
 
-     # Filter guest IPs to IPv4 only (exclude IPv6 addresses)
-     $allIPs = $vm.Guest.IPAddress
-     $ipv4   = $allIPs | Where-Object {
-         $_ -match '^(\d{1,3}\.){3}\d{1,3}$'
-     }
-        $ipv4Address = if ($ipv4) { $ipv4[0] } else { "N/A (no IPv4 or Tools offline)" }
-
     # Pull IP from guest info
     $ipList = $vm.Guest.IPAddress
     $ip     = if ($ipList -and $ipList.Count -gt $AdapterIndex) { $ipList[$AdapterIndex] } `
@@ -378,7 +371,7 @@ function Get-IP {
         VMName      = $VMName
         AdapterName = $adapter.Name
         MacAddress  = $mac
-        IPv4Address   = $ip
+        IPAddress   = $ip
     }
 
     Write-Host ""

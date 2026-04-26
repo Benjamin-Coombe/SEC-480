@@ -1,0 +1,11 @@
+---
+- name: configure DHCP on blue firewall
+  hosts: fw-blue
+  gather_facts: false
+
+  tasks:
+    - name: configure DHCP
+      vyos.vyos.vyos_config:
+        lines:
+          - "set service dhcp-server shared-network-name {{ dhcp_name }} authoritative"
+          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ dhcp_network }} default-router {{ dhcp_router }}
