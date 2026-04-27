@@ -1,6 +1,6 @@
 ---
-- name: Configure DHCP on fw-blue20
-  hosts: fw-blue20
+- name: Configure DHCP on fw-blue
+  hosts: fw-blue
   gather_facts: false
 
   tasks:
@@ -8,12 +8,12 @@
       vyos.vyos.vyos_config:
         lines:
           - "set service dhcp-server shared-network-name {{ dhcp_name }} authoritative"
-          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ dhcp_network }} default-router {{ dhcp_router }}"
-          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ dhcp_network }} domain-name {{ dhcp_domain }}"
-          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ dhcp_network }} lease {{ dhcp_lease }}"
-          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ dhcp_network }} name-server {{ dhcp_dns }}"
-          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ dhcp_network }} range {{ dhcp_name }}--POOL start {{ dhcp_start }}"
-          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ dhcp_network }} range {{ dhcp_name }}--POOL stop {{ dhcp_stop }}"
+          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ network }} default-router {{ default_router }}"
+          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ network }} domain-name {{ domain }}"
+          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ network }} lease {{ lease_time }}"
+          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ network }} name-server {{ dns_server }}"
+          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ network }} range {{ dhcp_name }}--POOL start {{ pool_start }}"
+          - "set service dhcp-server shared-network-name {{ dhcp_name }} subnet {{ network }} range {{ dhcp_name }}--POOL stop {{ pool_stop }}"
         match: none
         save: true
 

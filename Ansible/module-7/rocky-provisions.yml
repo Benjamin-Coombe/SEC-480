@@ -21,25 +21,9 @@
       ansible.builtin.hostname:
         name: "{{ new_hostname }}"
 
-    - name: Set static IP via nmcli
-      ansible.builtin.command:
-        cmd: >
-          nmcli con mod ens33
-          ipv4.method manual
-          ipv4.addresses {{ static_ip }}/{{ subnet_prefix }}
-          ipv4.gateway {{ gateway }}
-          ipv4.dns {{ dns_server }}
-      changed_when: true
-
-    - name: Bring connection up with new static IP
-      ansible.builtin.command:
-        cmd: nmcli con up ens33
-      async: 10
-      poll: 0
-
     - name: Apply static IP and restart networking in background
       ansible.builtin.shell: |
-        nmcli con mod ens33 ipv4.method manual ipv4.addresses {{ static_ip }}/{{ subnet_prefix }} ipv4.gateway {{ gateway }} ipv4.dns {{ dns_server }}
-        sleep 2 && nmcli con up ens33
+        nmcli con mod ens34 ipv4.method manual ipv4.addresses {{ static_ip }}/{{ subnet_prefix }} ipv4.gateway {{ gateway }} ipv4.dns {{ dns_server }}
+        sleep 2 && nmcli con up ens34
       async: 45
       poll: 0

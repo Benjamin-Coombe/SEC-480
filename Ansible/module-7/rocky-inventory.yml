@@ -1,7 +1,7 @@
 all:
   hosts:
     rocky-1:
-      ansible_host: 10.0.5.75
+      ansible_host: 10.0.5.78
       static_ip: 10.0.5.10
       new_hostname: rocky-1
     rocky-2:
@@ -13,10 +13,10 @@ all:
       static_ip: 10.0.5.12
       new_hostname: rocky-3
   vars:
-    ansible_user: deployer
-    ansible_password: "Password"
+    ansible_user: rocky
+    ansible_password: "rocky"
     ansible_become: true
-    ansible_become_password: "Password"
+    ansible_become_password: "rocky"
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no vyos@10.0.17.200"'
     gateway: "10.0.5.2"
     dns_server: "8.8.8.8"

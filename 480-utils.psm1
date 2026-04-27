@@ -98,7 +98,7 @@ function New-LinkedClone {
         [string]$CloneName,
         [string]$DatastoreName,
         [string]$ESXiHost,
-        [string]$FolderName    = "Discovered virtual machine",
+        [string]$FolderName    = "Base",
         [string]$SnapshotName  = "Base"
     )
 
@@ -195,7 +195,7 @@ function New-FullClone {
         [string]$CloneName,
         [string]$DatastoreName,
         [string]$ESXiHost,
-        [string]$FolderName   = "Discovered virtual machine",
+        [string]$FolderName   = "Base",
         [string]$SnapshotName = "Base"
     )
 
