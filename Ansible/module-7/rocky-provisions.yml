@@ -36,3 +36,10 @@
         cmd: nmcli con up ens33
       async: 10
       poll: 0
+
+    - name: Apply static IP and restart networking in background
+      ansible.builtin.shell: |
+        nmcli con mod ens33 ipv4.method manual ipv4.addresses {{ static_ip }}/{{ subnet_prefix }} ipv4.gateway {{ gateway }} ipv4.dns {{ dns_server }}
+        sleep 2 && nmcli con up ens33
+      async: 45
+      poll: 0
