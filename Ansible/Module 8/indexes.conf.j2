@@ -1,0 +1,12 @@
+# indexes.conf — managed by Ansible — DO NOT EDIT MANUALLY
+# Generated for: {{ inventory_hostname }}
+
+{% for idx in splunk_indexes %}
+[{{ idx.name }}]
+homePath   = $SPLUNK_DB/{{ idx.name }}/db
+coldPath   = $SPLUNK_DB/{{ idx.name }}/colddb
+thawedPath = $SPLUNK_DB/{{ idx.name }}/thaweddb
+maxDataSizeMB = {{ idx.maxDataSizeMB }}
+frozenTimePeriodInSecs = {{ idx.frozenTimePeriodInSecs }}
+
+{% endfor %}

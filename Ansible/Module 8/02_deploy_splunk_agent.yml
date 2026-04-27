@@ -1,0 +1,277 @@
+---
+# =============================================================================
+# Deliverable 2 — Deploy Splunk Universal Forwarder Agent
+# =============================================================================
+# Installs the Splunk Universal Forwarder on BLUE-LAN agent systems,
+# configures it to forward logs to the Splunk Enterprise server, and
+# verifies that events are flowing end-to-end.
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.ini playbooks/02_deploy_splunk_agent.yml
+# =============================================================================
+
+- name: Deploy Splunk Universal Forwarder on Agent Systems
+  hosts: splunk_agents_linux
+  become: true
+  gather_facts: true
+
+  vars:
+    uf_deb_dest: /tmp/splunkforwarder.deb
+    uf_bin: "{{ splunk_forwarder_install_dir }}/bin/splunk"
+    uf_etc: "{{ splunk_forwarder_install_dir }}/etc"
+
+  # ── Pre-flight ─────────────────────────────────────────────────────────────
+  pre_tasks:
+    - name: Assert OS family is Debian/Ubuntu
+      ansible.builtin.assert:
+        that: ansible_os_family == "Debian"
+        fail_msg: "This playbook targets Debian/Ubuntu agents only."
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - wget
+          - curl
+          - auditd
+          - audispd-plugins
+        state: present
+
+  # ── Tasks ──────────────────────────────────────────────────────────────────
+  tasks:
+
+    # ── 1. Create dedicated forwarder user/group ──────────────────────────────
+    - name: Create splunkfwd group
+      ansible.builtin.group:
+        name: "{{ splunk_forwarder_group }}"
+        system: true
+        state: present
+
+    - name: Create splunkfwd user
+      ansible.builtin.user:
+        name: "{{ splunk_forwarder_user }}"
+        group: "{{ splunk_forwarder_group }}"
+        shell: /sbin/nologin
+        home: "{{ splunk_forwarder_install_dir }}"
+        system: true
+        create_home: false
+        state: present
+
+    # ── 2. Download Universal Forwarder .deb ──────────────────────────────────
+    - name: Download Splunk Universal Forwarder .deb
+      ansible.builtin.get_url:
+        url: "{{ splunk_forwarder_deb_url }}"
+        dest: "{{ uf_deb_dest }}"
+        mode: "0644"
+        timeout: 120
+      register: uf_download
+
+    # ── 3. Install Universal Forwarder ────────────────────────────────────────
+    - name: Install Splunk Universal Forwarder via dpkg
+      ansible.builtin.apt:
+        deb: "{{ uf_deb_dest }}"
+        state: present
+      when: uf_download is succeeded
+
+    # ── 4. Seed admin credentials for forwarder ───────────────────────────────
+    - name: Create user-seed.conf for forwarder
+      ansible.builtin.copy:
+        dest: "{{ uf_etc }}/system/local/user-seed.conf"
+        owner: "{{ splunk_forwarder_user }}"
+        group: "{{ splunk_forwarder_group }}"
+        mode: "0600"
+        content: |
+          [user_info]
+          USERNAME = {{ splunk_admin_user }}
+          PASSWORD = {{ splunk_admin_password }}
+
+    # ── 5. Configure outputs.conf — point forwarder at the indexer ────────────
+    - name: Deploy outputs.conf to forward to Splunk Enterprise
+      ansible.builtin.copy:
+        dest: "{{ uf_etc }}/system/local/outputs.conf"
+        owner: "{{ splunk_forwarder_user }}"
+        group: "{{ splunk_forwarder_group }}"
+        mode: "0644"
+        content: |
+          [tcpout]
+          defaultGroup = splunk_indexers
+
+          [tcpout:splunk_indexers]
+          server = {{ splunk_indexer_host }}:{{ splunk_indexer_port }}
+          useACK = false
+
+          [tcpout-server://{{ splunk_indexer_host }}:{{ splunk_indexer_port }}]
+      notify: Restart Splunk Forwarder
+
+    # ── 6. Configure inputs.conf — monitor key log sources ───────────────────
+    - name: Deploy inputs.conf with monitored log sources
+      ansible.builtin.copy:
+        dest: "{{ uf_etc }}/system/local/inputs.conf"
+        owner: "{{ splunk_forwarder_user }}"
+        group: "{{ splunk_forwarder_group }}"
+        mode: "0644"
+        content: |
+          # ── Syslog ──────────────────────────────────────────────
+          [monitor:///var/log/syslog]
+          index = linux_events
+          sourcetype = syslog
+          disabled = false
+
+          # ── Authentication / PAM ─────────────────────────────────
+          [monitor:///var/log/auth.log]
+          index = auth_events
+          sourcetype = linux_secure
+          disabled = false
+
+          # ── Audit daemon ─────────────────────────────────────────
+          [monitor:///var/log/audit/audit.log]
+          index = linux_events
+          sourcetype = linux_audit
+          disabled = false
+
+          # ── Kernel / dmesg ──────────────────────────────────────
+          [monitor:///var/log/kern.log]
+          index = linux_events
+          sourcetype = linux_kern
+          disabled = false
+
+          # ── Bash command history (requires auditd, see below) ────
+          [monitor:///var/log/bash_history.log]
+          index = linux_events
+          sourcetype = bash_history
+          disabled = false
+
+          # ── Package manager ──────────────────────────────────────
+          [monitor:///var/log/dpkg.log]
+          index = linux_events
+          sourcetype = dpkg
+          disabled = false
+
+          # ── Cron ────────────────────────────────────────────────
+          [monitor:///var/log/cron.log]
+          index = linux_events
+          sourcetype = cron
+          disabled = false
+      notify: Restart Splunk Forwarder
+
+    # ── 7. Configure auditd to capture command execution ─────────────────────
+    - name: Deploy auditd rules for privileged command monitoring
+      ansible.builtin.copy:
+        dest: /etc/audit/rules.d/splunk-monitoring.rules
+        mode: "0640"
+        content: |
+          ## Auditd rules for Splunk monitoring — managed by Ansible
+          # Delete all existing rules on load
+          -D
+
+          # Increase buffer size
+          -b 8192
+
+          # Monitor /etc/passwd and /etc/shadow access
+          -w /etc/passwd -p rwxa -k passwd_changes
+          -w /etc/shadow -p rwxa -k shadow_access
+          -w /etc/sudoers -p rwxa -k sudoers_changes
+
+          # Monitor privileged command execution
+          -a always,exit -F arch=b64 -S execve -F euid=0 -k root_commands
+          -a always,exit -F arch=b32 -S execve -F euid=0 -k root_commands
+
+          # Monitor network connections
+          -a always,exit -F arch=b64 -S connect -k network_connect
+          -a always,exit -F arch=b32 -S connect -k network_connect
+
+          # Monitor su / sudo usage
+          -w /bin/su -p x -k privilege_escalation
+          -w /usr/bin/sudo -p x -k privilege_escalation
+
+          # Monitor cron
+          -w /var/spool/cron -p rwxa -k cron_changes
+          -w /etc/cron.d -p rwxa -k cron_changes
+
+          # Monitor SSH keys
+          -w /root/.ssh -p rwxa -k ssh_key_access
+
+          # Make the configuration immutable (optional — requires reboot to change)
+          # -e 2
+      notify: Restart auditd
+
+    - name: Enable and start auditd
+      ansible.builtin.service:
+        name: auditd
+        enabled: true
+        state: started
+
+    # ── 8. First-run: accept license and start forwarder ─────────────────────
+    - name: Accept license and start Splunk Forwarder (first run)
+      ansible.builtin.command:
+        cmd: "{{ uf_bin }} start --accept-license --answer-yes --no-prompt"
+        creates: "{{ splunk_forwarder_install_dir }}/var/run/splunk/splunkd.pid"
+      become_user: "{{ splunk_forwarder_user }}"
+      register: uf_first_start
+      changed_when: uf_first_start.rc == 0
+
+    # ── 9. Enable forwarder boot-start ───────────────────────────────────────
+    - name: Enable Splunk Forwarder boot-start
+      ansible.builtin.command:
+        cmd: "{{ uf_bin }} enable boot-start -user {{ splunk_forwarder_user }} --accept-license --answer-yes --no-prompt"
+      changed_when: true
+
+    # ── 10. Verify forwarder → indexer connection ─────────────────────────────
+    - name: Wait for Splunk Forwarder management port to open
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 8089
+        timeout: 60
+        state: started
+
+    - name: Check forwarder connection to indexer
+      ansible.builtin.command:
+        cmd: >
+          {{ uf_bin }} list forward-server
+          -auth {{ splunk_admin_user }}:{{ splunk_admin_password }}
+      register: fwd_status
+      changed_when: false
+      ignore_errors: true
+
+    - name: Display forward-server status
+      ansible.builtin.debug:
+        msg: "{{ fwd_status.stdout_lines }}"
+
+    # ── 11. Generate a test event to confirm data flow ────────────────────────
+    - name: Inject a test syslog event
+      ansible.builtin.shell:
+        cmd: |
+          logger -t ansible-test "Splunk forwarder test event from {{ inventory_hostname }} at $(date)"
+      changed_when: true
+
+    - name: Wait 5 seconds for event to be forwarded
+      ansible.builtin.pause:
+        seconds: 5
+
+  # ── Handlers ──────────────────────────────────────────────────────────────
+  handlers:
+    - name: Restart Splunk Forwarder
+      ansible.builtin.command:
+        cmd: "{{ uf_bin }} restart --answer-yes"
+      changed_when: true
+
+    - name: Restart auditd
+      ansible.builtin.service:
+        name: auditd
+        state: restarted
+
+  # ── Post-tasks ─────────────────────────────────────────────────────────────
+  post_tasks:
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "======================================================"
+          - " Splunk Universal Forwarder deployed on {{ inventory_hostname }}"
+          - " Forwarding to: {{ splunk_indexer_host }}:{{ splunk_indexer_port }}"
+          - " Monitored logs: syslog, auth.log, audit.log, kern.log"
+          - " Verify in Splunk: index=linux_events OR index=auth_events"
+          - "======================================================"

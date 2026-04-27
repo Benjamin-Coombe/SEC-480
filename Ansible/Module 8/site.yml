@@ -1,0 +1,25 @@
+---
+# =============================================================================
+# site.yml — Master Playbook (runs all deliverables in order)
+# =============================================================================
+# Usage:
+#   # All deliverables:
+#   ansible-playbook -i inventory/hosts.ini site.yml
+#
+#   # Single deliverable:
+#   ansible-playbook -i inventory/hosts.ini site.yml --tags server
+#   ansible-playbook -i inventory/hosts.ini site.yml --tags agent
+#   ansible-playbook -i inventory/hosts.ini site.yml --tags threats
+# =============================================================================
+
+- name: "Deliverable 1 — Deploy Splunk Enterprise Server"
+  import_playbook: playbooks/01_deploy_splunk_server.yml
+  tags: [server, deliverable1]
+
+- name: "Deliverable 2 — Deploy Splunk Universal Forwarder Agents"
+  import_playbook: playbooks/02_deploy_splunk_agent.yml
+  tags: [agent, deliverable2]
+
+- name: "Deliverable 3 — Threat Simulation & Alert Validation"
+  import_playbook: playbooks/03_threat_simulation.yml
+  tags: [threats, deliverable3]

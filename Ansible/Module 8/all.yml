@@ -1,0 +1,42 @@
+# group_vars/all.yml
+# Global variables shared across all playbooks
+
+# ─── Splunk Version ───────────────────────────────────────────────────────────
+splunk_version: "9.4.1"
+splunk_build: "e3bdab203ac8"
+splunk_forwarder_build: "2f7817798b5d"
+
+# ─── Splunk Enterprise (Server) ───────────────────────────────────────────────
+splunk_server_deb_url: >-
+  https://download.splunk.com/products/splunk/releases/{{ splunk_version }}/linux/splunk-{{ splunk_version }}-{{ splunk_build }}-linux-amd64.deb
+splunk_install_dir: /opt/splunk
+splunk_admin_user: admin
+splunk_admin_password: "password"   # Change before running in production
+splunk_web_port: 8000
+splunk_mgmt_port: 8089
+splunk_hec_port: 8088
+splunk_receiving_port: 9997
+
+# ─── Splunk Universal Forwarder ───────────────────────────────────────────────
+splunk_forwarder_deb_url: >-
+  https://download.splunk.com/products/universalforwarder/releases/{{ splunk_version }}/linux/splunkforwarder-{{ splunk_version }}-{{ splunk_build }}-linux-amd64.deb
+splunk_forwarder_install_dir: /opt/splunkforwarder
+splunk_forwarder_user: splunkfwd
+splunk_forwarder_group: splunkfwd
+
+# ─── Indexer / Receiver settings ─────────────────────────────────────────────
+# The IP that agents will forward logs to (the Splunk Enterprise server)
+splunk_indexer_host: "10.0.5.81"   # Update to your actual SIEM server IP
+splunk_indexer_port: "{{ splunk_receiving_port }}"
+
+# ─── Indexes ──────────────────────────────────────────────────────────────────
+splunk_indexes:
+  - name: linux_events
+    maxDataSizeMB: 5000
+    frozenTimePeriodInSecs: 604800   # 7 days
+  - name: auth_events
+    maxDataSizeMB: 2000
+    frozenTimePeriodInSecs: 604800
+  - name: threat_simulation
+    maxDataSizeMB: 1000
+    frozenTimePeriodInSecs: 604800

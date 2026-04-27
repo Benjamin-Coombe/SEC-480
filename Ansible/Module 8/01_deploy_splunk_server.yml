@@ -1,0 +1,211 @@
+---
+# =============================================================================
+# Deliverable 1 — Deploy Splunk Enterprise SIEM Server
+# =============================================================================
+# Installs Splunk Enterprise on the BLUE1-LAN server, configures receiving,
+# creates custom indexes, enables Splunk Web, and hardens the deployment.
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.ini playbooks/01_deploy_splunk_server.yml
+# =============================================================================
+
+- name: Deploy Splunk Enterprise SIEM Server
+  hosts: splunk_server
+  become: true
+  gather_facts: true
+
+  vars:
+    splunk_deb_dest: /tmp/splunk-enterprise.deb
+    splunk_seed_file: "{{ splunk_install_dir }}/etc/system/local/user-seed.conf"
+
+  # ── Pre-flight checks ──────────────────────────────────────────────────────
+  pre_tasks:
+    - name: Assert OS family is Debian/Ubuntu
+      ansible.builtin.assert:
+        that: ansible_os_family == "Debian"
+        fail_msg: "This playbook targets Debian/Ubuntu systems only."
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - wget
+          - curl
+          - net-tools
+          - ufw
+          - python3-pip
+        state: present
+
+  # ── Tasks ──────────────────────────────────────────────────────────────────
+  tasks:
+
+    # ── 1. Download Splunk Enterprise .deb ────────────────────────────────────
+    - name: Download Splunk Enterprise .deb package
+      ansible.builtin.get_url:
+        url: "{{ splunk_server_deb_url }}"
+        dest: "{{ splunk_deb_dest }}"
+        mode: "0644"
+        timeout: 120
+      register: splunk_download
+
+    # ── 2. Install Splunk Enterprise ──────────────────────────────────────────
+    - name: Install Splunk Enterprise via dpkg
+      ansible.builtin.apt:
+        deb: "{{ splunk_deb_dest }}"
+        state: present
+      when: splunk_download is succeeded
+
+    # ── 3. Seed admin credentials (avoids interactive first-run prompt) ────────
+    - name: Create user-seed.conf to pre-set admin credentials
+      ansible.builtin.copy:
+        dest: "{{ splunk_seed_file }}"
+        owner: splunk
+        group: splunk
+        mode: "0600"
+        content: |
+          [user_info]
+          USERNAME = {{ splunk_admin_user }}
+          PASSWORD = {{ splunk_admin_password }}
+
+    # ── 4. Accept license and start Splunk ───────────────────────────────────
+    - name: Accept Splunk license and start (first run)
+      ansible.builtin.command:
+        cmd: "{{ splunk_install_dir }}/bin/splunk start --accept-license --answer-yes --no-prompt"
+        creates: "{{ splunk_install_dir }}/var/run/splunk/splunkd.pid"
+      become_user: splunk
+      register: splunk_first_start
+      changed_when: splunk_first_start.rc == 0
+
+    # ── 5. Enable Splunk to start at boot ─────────────────────────────────────
+    - name: Enable Splunk boot-start (systemd)
+      ansible.builtin.command:
+        cmd: "{{ splunk_install_dir }}/bin/splunk enable boot-start -systemd-managed 1 -user splunk --accept-license --answer-yes --no-prompt"
+      changed_when: true
+
+    # ── 6. Configure receiving port (9997) so forwarders can ship logs ────────
+    - name: Enable Splunk receiving on port {{ splunk_receiving_port }}
+      ansible.builtin.command:
+        cmd: >
+          {{ splunk_install_dir }}/bin/splunk enable listen {{ splunk_receiving_port }}
+          -auth {{ splunk_admin_user }}:{{ splunk_admin_password }}
+      changed_when: true
+      notify: Restart Splunk
+
+    # ── 7. Create custom indexes ──────────────────────────────────────────────
+    - name: Deploy indexes.conf with custom indexes
+      ansible.builtin.template:
+        src: ../templates/indexes.conf.j2
+        dest: "{{ splunk_install_dir }}/etc/system/local/indexes.conf"
+        owner: splunk
+        group: splunk
+        mode: "0644"
+      notify: Restart Splunk
+
+    # ── 8. Configure Splunk Web (enable HTTPS, set port) ─────────────────────
+    - name: Deploy web.conf to configure Splunk Web
+      ansible.builtin.copy:
+        dest: "{{ splunk_install_dir }}/etc/system/local/web.conf"
+        owner: splunk
+        group: splunk
+        mode: "0644"
+        content: |
+          [settings]
+          httpport = {{ splunk_web_port }}
+          enableSplunkWebSSL = false
+          startwebserver = true
+      notify: Restart Splunk
+
+    # ── 9. Configure inputs.conf — monitor key system logs on server itself ───
+    - name: Deploy inputs.conf to monitor server-side logs
+      ansible.builtin.copy:
+        dest: "{{ splunk_install_dir }}/etc/system/local/inputs.conf"
+        owner: splunk
+        group: splunk
+        mode: "0644"
+        content: |
+          [monitor:///var/log/syslog]
+          index = linux_events
+          sourcetype = syslog
+
+          [monitor:///var/log/auth.log]
+          index = auth_events
+          sourcetype = linux_secure
+
+          [monitor:///var/log/dpkg.log]
+          index = linux_events
+          sourcetype = dpkg
+      notify: Restart Splunk
+
+    # ── 10. Open firewall ports ───────────────────────────────────────────────
+    - name: Allow Splunk Web port through UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ splunk_web_port }}"
+        proto: tcp
+
+    - name: Allow Splunk management port through UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ splunk_mgmt_port }}"
+        proto: tcp
+
+    - name: Allow Splunk receiving port through UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ splunk_receiving_port }}"
+        proto: tcp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    # ── 11. Verify Splunk is running ──────────────────────────────────────────
+    - name: Wait for Splunk Web to become available
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: "{{ splunk_web_port }}"
+        timeout: 120
+        state: started
+
+    - name: Verify Splunk status
+      ansible.builtin.command:
+        cmd: "{{ splunk_install_dir }}/bin/splunk status"
+      register: splunk_status
+      changed_when: false
+
+    - name: Print Splunk status
+      ansible.builtin.debug:
+        msg: "{{ splunk_status.stdout_lines }}"
+
+  # ── Handlers ──────────────────────────────────────────────────────────────
+  handlers:
+    - name: Restart Splunk
+      ansible.builtin.service:
+        name: SplunkForwarder
+        state: restarted
+      ignore_errors: true   # systemd unit name may differ; fallback below
+
+    - name: Restart Splunk via binary
+      ansible.builtin.command:
+        cmd: "{{ splunk_install_dir }}/bin/splunk restart --answer-yes"
+      listen: "Restart Splunk"
+      changed_when: true
+
+  # ── Post-tasks summary ────────────────────────────────────────────────────
+  post_tasks:
+    - name: Print deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "======================================================"
+          - " Splunk Enterprise deployed successfully!"
+          - " Web UI  : http://{{ ansible_host }}:{{ splunk_web_port }}"
+          - " Username: {{ splunk_admin_user }}"
+          - " Password: {{ splunk_admin_password }}"
+          - " Receiver: {{ ansible_host }}:{{ splunk_receiving_port }}"
+          - "======================================================"

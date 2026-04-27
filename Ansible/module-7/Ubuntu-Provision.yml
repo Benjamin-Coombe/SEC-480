@@ -1,16 +1,16 @@
 ---
-- name: Post Provision Ubuntu VMs
+- name: Post Provision Ubuntu
   hosts: all
   gather_facts: false
 
   tasks:
-    - name: Add deployer public key for rangeuser
+    - name: Add deployer public key
       ansible.builtin.authorized_key:
         user: rangeuser
         state: present
         key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
 
-    - name: Create sudoers drop-in for rangeuser
+    - name: Create sudoers for rangeuser
       ansible.builtin.copy:
         dest: /etc/sudoers.d/rangeuser
         content: "rangeuser ALL=(ALL) NOPASSWD: ALL\n"
