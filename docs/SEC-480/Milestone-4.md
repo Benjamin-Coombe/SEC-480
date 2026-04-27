@@ -4,7 +4,7 @@ Install all the dependencies for PowerCLI and Ansible using this [guide](https:/
 
 Long story short: `sudo apt update` `sudo apt install ansible` `sudo snap install powershell --clasic` *There are more commands in the guide*<br/>
 
-We will be following [this guide](https://greenmountaincyber.com/docs/topics/vmware/powercli/extracting-snapshots/https:/) for this lab, for the most part this guide will be following that.
+We will be following [this guide](https://greenmountaincyber.com/docs/topics/vmware/powercli/extracting-snapshots/) for this lab, for the most part this guide will be following that.
 
 Make sure that you have all of the ISOs downloaded from the shared drive before starting as they take awhile to download, if you havent already put them in a folder for easier navigation.
 

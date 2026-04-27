@@ -25,9 +25,9 @@ function New-Clone {
     }
 
     # Look up the Base Snapshot
-    $snapshot = Get-Snapshot -VM $vm -Name "Base Snapshot" -ErrorAction SilentlyContinue
+    $snapshot = Get-Snapshot -VM $vm -Name "Base" -ErrorAction SilentlyContinue
     if (-not $snapshot) {
-        Write-Host "ERROR: No snapshot named 'Base Snapshot' found on '$sourceVM'" -ForegroundColor Red
+        Write-Host "ERROR: No snapshot named 'Base' found on '$sourceVM'" -ForegroundColor Red
         return
     }
 
