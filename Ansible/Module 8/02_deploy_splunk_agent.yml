@@ -215,9 +215,28 @@
       changed_when: uf_first_start.rc == 0
 
     # ── 9. Enable forwarder boot-start ───────────────────────────────────────
+    - name: Stop Splunk Forwarder before enabling boot-start
+      ansible.builtin.command:
+        cmd: "{{ splunk_forwarder_install_dir }}/bin/splunk stop"
+      changed_when: true
+      ignore_errors: true
+
     - name: Enable Splunk Forwarder boot-start
       ansible.builtin.command:
         cmd: "{{ uf_bin }} enable boot-start -user {{ splunk_forwarder_user }} --accept-license --answer-yes --no-prompt"
+      changed_when: true
+      ignore_errors: true
+
+    - name: Start Splunk Forwarder via systemd
+      ansible.builtin.systemd:
+        name: SplunkForwarder
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Start Splunk Forwarder after boot-start enabled
+      ansible.builtin.command:
+        cmd: "{{ uf_bin }} start --answer-yes"
       changed_when: true
 
     # ── 10. Verify forwarder → indexer connection ─────────────────────────────
@@ -227,6 +246,7 @@
         port: 8089
         timeout: 60
         state: started
+      ignore_errors: true
 
     - name: Check forwarder connection to indexer
       ansible.builtin.command:

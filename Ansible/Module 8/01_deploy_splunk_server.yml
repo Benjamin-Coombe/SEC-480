@@ -15,7 +15,7 @@
   gather_facts: true
 
   vars:
-    splunk_deb_dest: /tmp/splunk-enterprise.deb
+    splunk_deb_dest: /var/tmp/splunk-enterprise.deb
     splunk_seed_file: "{{ splunk_install_dir }}/etc/system/local/user-seed.conf"
 
   # ── Pre-flight checks ──────────────────────────────────────────────────────
@@ -80,11 +80,24 @@
       register: splunk_first_start
       changed_when: splunk_first_start.rc == 0
 
-    # ── 5. Enable Splunk to start at boot ─────────────────────────────────────
-    - name: Enable Splunk boot-start (systemd)
+   # ── 5. Enable Splunk to start at boot ─────────────────────────────────────
+    - name: Stop Splunk before enabling boot-start
       ansible.builtin.command:
-        cmd: "{{ splunk_install_dir }}/bin/splunk enable boot-start -systemd-managed 1 -user splunk --accept-license --answer-yes --no-prompt"
+        cmd: "{{ splunk_install_dir }}/bin/splunk stop"
       changed_when: true
+      ignore_errors: true
+
+    - name: Start Splunk after boot-start enabled
+      ansible.builtin.command:
+        cmd: "{{ splunk_install_dir }}/bin/splunk start --answer-yes"
+      changed_when: true
+
+    - name: Start Splunk via systemd after boot-start enabled
+      ansible.builtin.systemd:
+        name: Splunkd
+        state: started
+        enabled: true
+        daemon_reload: true
 
     # ── 6. Configure receiving port (9997) so forwarders can ship logs ────────
     - name: Enable Splunk receiving on port {{ splunk_receiving_port }}

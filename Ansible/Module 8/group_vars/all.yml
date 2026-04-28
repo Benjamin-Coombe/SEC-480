@@ -26,7 +26,7 @@ splunk_forwarder_group: splunkfwd
 
 # ─── Indexer / Receiver settings ─────────────────────────────────────────────
 # The IP that agents will forward logs to (the Splunk Enterprise server)
-splunk_indexer_host: "10.0.5.81"   # Update to your actual SIEM server IP
+splunk_indexer_host: "10.0.5.83"   # Update to your actual SIEM server IP
 splunk_indexer_port: "{{ splunk_receiving_port }}"
 
 # ─── Indexes ──────────────────────────────────────────────────────────────────
