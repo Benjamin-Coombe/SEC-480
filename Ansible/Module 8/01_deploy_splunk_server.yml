@@ -107,6 +107,7 @@
           -auth {{ splunk_admin_user }}:{{ splunk_admin_password }}
       changed_when: true
       notify: Restart Splunk
+      ignore_errors: true
 
     # ── 7. Create custom indexes ──────────────────────────────────────────────
     - name: Deploy indexes.conf with custom indexes
